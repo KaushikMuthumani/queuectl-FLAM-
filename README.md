@@ -224,7 +224,7 @@ java -jar target/queue-ctl.jar worker --start --queues default:3 --dashboard
 
 > **Watch the complete workflow (build → enqueue → processing → DLQ → retry → dashboard):**
 
-https://github.com/KaushikMuthumani/queue-ctl-FLAM-Backend-/blob/main/docs/screenshots/demo-2025-11-09_17.45.38.mp4
+https://github.com/KaushikMuthumani/queue-ctl-FLAM-Backend-/raw/main/docs/screenshots/demo-2025-11-09_17.45.38.mp4
 
 <!-- If you prefer inline playback as well, keep this HTML block (works on GitHub pages and many viewers). -->
 <video width="900" controls>
