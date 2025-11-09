@@ -3,7 +3,7 @@
 
 > **Author:** [Kaushik Muthumani](https://github.com/KaushikMuthumani)  
 > **Tech Stack:** Java 21 · SQLite · Flyway · Spark Java · Picocli · Maven  
-> **Domain:** Backend Systems · Distributed Computing · Job Scheduling  
+> **Domain:** Backend Systems · Job Scheduling  
 > **Version:** 1.0.0  
 > **Goal:** Build a self-contained, fault-tolerant background job queue demonstrating backend engineering depth.
 
@@ -13,7 +13,7 @@
 
 **QueueCTL** is a **CLI-driven background job orchestration system** built completely in **Java**, designed to execute commands asynchronously with high reliability, persistence, and observability.
 
-This project simulates the essential backbone of distributed background systems like **Celery**, **Sidekiq**, and **BullMQ** — but in a **minimal, production-style architecture**, demonstrating Kaushik’s capability to design and ship real backend infrastructure systems.
+This project simulates the essential backbone of distributed background systems like **Celery**, **Sidekiq**, and **BullMQ** — but in a **minimal, production-style architecture**, demonstrating my capability to design and ship real backend infrastructure systems.
 
 QueueCTL manages:
 - Background job enqueuing and tracking
@@ -36,8 +36,6 @@ This project was built with **production thinking** — reliability, resilience,
 ✅ Fully Observable  
 ✅ CLI + Dashboard Dual Interface  
 
-> “Systems that fail gracefully are systems built by engineers who think ahead.”  
-> — *Kaushik Muthumani*
 
 ---
 
@@ -85,41 +83,28 @@ This project was built with **production thinking** — reliability, resilience,
 
 ## 📁 **Folder Structure**
 ```
-queue-ctl/
-├── pom.xml # Maven project file
-├── README.md # This documentation
-├── scripts/
+queue-ctl-FLAM-Backend-/
+├── pom.xml # Maven build file
+├── README.md # Project documentation
+├── .gitignore # Ignored build artifacts
+│
+├── scripts/ # Utility & demo scripts
 │ ├── demo.sh # Automated full system demo
 │ └── clean.sh # Reset database & logs
-├── docs/
-│ ├── screenshots/ # Proof images
-│ │ ├── pending.png
-│ │ ├── processing.png
-│ │ ├── completed.png
-│ │ ├── dlq.png
-│ │ └── dashboard.png
-│ ├── demo/demo.gif # Terminal + dashboard demo
-│ └── proof/ # Proof JSONs & logs
-├── src/main/java/com/queuectl/
-│ ├── QueueCtl.java # CLI entrypoint (Picocli)
-│ ├── cli/ # Subcommands: enqueue, worker, dlq, config, status, logs
-│ ├── core/ # Business logic
-│ │ ├── JobService.java # Job lifecycle handling
-│ │ ├── WorkerService.java # Worker management
-│ │ ├── Backoff.java # Retry + backoff calculation
-│ │ ├── SchedulerService.java# Cron & delayed jobs
-│ │ ├── LeaseSweeper.java # Recover stuck jobs
-│ │ ├── CommandExecutor.java # Executes shell commands
-│ │ └── Metrics.java # Tracks stats for dashboard
-│ ├── http/DashboardServer.java# Spark HTTP dashboard
-│ ├── db/ # DB layer
-│ │ ├── DataSourceFactory.java
-│ │ └── Tx.java
-│ └── model/ # Models for Job, QueueCfg, Config
-│ ├── Job.java
-│ ├── JobState.java
-│ └── QueueCfg.java
-└── src/main/resources/db/migration/V1__init.sql # Database schema
+│
+├── docs/ # Visual proofs & logs
+│ ├── screenshots/ # Screenshots & demo videos
+│ └── proof/ # JSON + text outputs from demo.sh
+│
+├── src/main/java/com/queuectl/ # Core Java source
+│ ├── cli/ (ConfigCmd, DlqCmd, EnqueueCmd, ListCmd, LogsCmd, QueueCmd, StatusCmd, WorkerCmd) # CLI commands
+│ ├── core/ (Backoff, CommandExecutor, JobService, SchedulerService, WorkerService, LeaseSweeper, QueueService, RateLimiter, Idempotency) # Core backend logic
+│ ├── http/ (DashboardServer) # Web dashboard server
+│ ├── db/ (DataSourceFactory, Tx) # Database utilities
+│ └── model/ (Job, JobState, QueueCtl) # Data models
+│
+└── src/main/resources/db/migration/
+└── V1__init.sql # Database schema migration
 ```
 
 ---
@@ -182,19 +167,87 @@ retries exhausted → DLQ
 
 ---
 
-## 🧪 **Proof of Work: Demo Execution**
+## 🧪 Proof of Work: Demo Execution
 
+You can either run a quick manual test or execute the automated demo script.
+
+---
+
+### 🧩 Step-by-Step Setup & Run Guide
+
+#### 1️⃣ Clone the Repository
+```bash
+
+git clone https://github.com/KaushikMuthumani/queue-ctl-FLAM-Backend-.git
+cd queue-ctl-FLAM-Backend-
+```
+2️⃣ Clean Build
 ```bash
 mvn clean package -DskipTests
+```
+✅ Expected: BUILD SUCCESS → JAR available at target/queue-ctl.jar
 
-# Enqueue jobs
+3️⃣ Manual Sanity Check (CLI Only)
+3.1 Enqueue Jobs
+
+```bash
 java -jar target/queue-ctl.jar enqueue '{"id":"ok1","queue":"default","command":"echo OK"}'
 java -jar target/queue-ctl.jar enqueue '{"id":"bad1","queue":"default","command":"no_such_cmd","max_retries":2}'
-java -jar target/queue-ctl.jar enqueue '{"id":"slow1","queue":"default","command":"sleep 5"}'
+java -jar target/queue-ctl.jar enqueue '{"id":"slow1","queue":"default","command":"sleep 2"}'
+```
+✅ Expected: Each job shows “Enqueued: id=...”
 
-# Start workers
+3.2 Check Queue Status
+
+```bash
+java -jar target/queue-ctl.jar status
+java -jar target/queue-ctl.jar list --state pending
+```
+✅ Expected: At least one pending job.
+
+3.3 Start Workers + Dashboard
+
+```bash
 java -jar target/queue-ctl.jar worker --start --queues default:3 --dashboard
-# Dashboard: http://localhost:8088/
+```
+✅ Expected: “Dashboard: http://localhost:8088”
+
+In a new terminal:
+
+```bash
+curl -s http://localhost:8088/health
+curl -s http://localhost:8088/status
+curl -s http://localhost:8088/jobs
+```
+✅ Expected: ok and JSON job stats.
+
+3.4 Observe Job Progress
+
+```bash
+java -jar target/queue-ctl.jar status
+java -jar target/queue-ctl.jar list --state completed
+java -jar target/queue-ctl.jar dlq list
+```
+✅ Expected: ok1, slow1 → completed,bad1 → retries → DLQ
+
+3.5 Retry a DLQ Job (optional)
+
+```bash
+java -jar target/queue-ctl.jar dlq retry bad1
+java -jar target/queue-ctl.jar list --state pending
+```
+3.6 Stop Workers Gracefully
+In the worker terminal:
+🛑 Press Ctrl + C to stop all workers.
+
+4️⃣ Automated Demo (Recommended)
+Runs the entire workflow end-to-end and saves proof logs.
+
+```bash
+chmod +x scripts/demo.sh
+./scripts/demo.sh
+✅ Artifacts saved: docs/proof/
+✅ Dashboard: http://localhost:8088
 ```
 ## 🖼️ Screenshots (Visual Proof)
 
@@ -237,17 +290,6 @@ https://github.com/KaushikMuthumani/queuectl-FLAM-/blob/main/docs/screenshots/de
 ![Live Demo](docs/demo/demo.gif)
 -->
 
-
----
-
-## 🌐 Dashboard Endpoints
-
-| Endpoint | Description | Example Output |
-|-----------|-------------|----------------|
-| `/health` | System health | `ok` |
-| `/status` | Job metrics | `{"pending":1,"processing":0,"completed":3,"failed":0,"dead":1}` |
-| `/jobs` | All jobs | `[{"id":"j1","state":"completed"}]` |
-| `/jobs?state=pending` | Filtered jobs | `[]` |
 
 ---
 
@@ -304,7 +346,7 @@ https://github.com/KaushikMuthumani/queuectl-FLAM-/blob/main/docs/screenshots/de
 - Designed and managed **multi-threaded concurrency**, **persistent storage**, and **system observability**.  
 - Emulated **real production-grade fault-tolerance** and recovery mechanisms.  
 
---
+
 
 ## 🧾 Conclusion
 
