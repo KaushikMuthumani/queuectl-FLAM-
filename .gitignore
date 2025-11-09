@@ -1,0 +1,28 @@
+# Maven build
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+release.properties
+
+# IDE / Editors
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Local DB + runtime files
+queuectl.db
+queuectl.db-shm
+queuectl.db-wal
+*.log
+worker.out
+
+# Build artifacts
+*.jar
